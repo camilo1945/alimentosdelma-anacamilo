@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web App de Distribución de Alimentos - Proveedores</title>
+    <link rel="stylesheet" href="../CSS/repartidor.css">
+</head>
+<body>
+    <div class="contenido">
+        <h1>Bienvenido a Distribución de Alimentos "Proveedores"</h1>
+    </div>
+
+    <div class="menu">
+        <ul>
+            <li><a href="../index_admin.html">Inicio</a></li>
+            <li><a href="Inventario.html">Inventario</a></li>
+            <li><a href="Clientes.html">Clientes</a></li>
+           <!-- <li><a href="Productos.html">Productos</a></li>-->
+            <li><a href="Proveedores.html">Pedidos</a></li>
+        </ul>
+    </div>
+    
+    <p>Buscar repartidor</p>
+    <input type="text" id="searchInput" placeholder="Buscar por nombre...">
+    <br><br>
+
+    <!-- Formulario para agregar un nuevo repartidor -->
+    <form id="addProviderForm">
+        <input type="text" id="nombre" placeholder="Nombre" required>
+        <input type="text" id="patente" placeholder="Patente" required>
+        <input type="text" id="telefono" placeholder="Teléfono" required>
+        <input type="email" id="correo" placeholder="Correo" required>
+        <button type="button" onclick="agregarProveedor()">Agregar Proveedor</button>
+    </form>
+
+    <!-- Mensaje de validación -->
+    <div id="validationMessage" style="color: red; display: none;">Por favor, complete todos los campos.</div>
+
+    <table id="providerTable">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Patente</th>
+                <th>Teléfono</th>
+                <th>Correo</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Aquí se llenarán las filas de la tabla dinámicamente con datos del servidor -->
+        </tbody>
+    </table>
+
+    <div class="footer">
+        <p>Distribuidora de alimentos del Mañana S.A</p>
+        <p>Dirección: 123 Calle Principal, Ciudad de talca</p>
+        <p>Teléfono: +56995854231</p>
+        <p>Horario de Atención: Lunes a Viernes, 8:00 AM - 6:00 PM</p>
+        <p>Email: info@example.com</p>
+        <p>Todos los derechos reservados &copy; 2024</p>
+    </div>
+     <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // Hacer una solicitud AJAX para obtener los datos de los repartidores
+            fetch('get_repartidor.php')
+                .then(response => response.json())
+                .then(data => {
+                    const tbody = document.querySelector("#providerTable tbody");
+                    tbody.innerHTML = "";
+
+                    data.forEach(repartidor => {
+                        const row = document.createElement("tr");
+                        row.setAttribute('data-id', repartidor.id);
+                        
+                        row.innerHTML = `
+                            <td>${repartidor.id}</td>
+                            <td>${repartidor.nombre}</td>
+                            <td>${repartidor.patente}</td>
+                            <td>${repartidor.telefono}</td>
+                            <td>${repartidor.correo}</td>
+                            <td>
+                                <button onclick="eliminarRepartidor(${repartidor.id})">Eliminar</button>
+                                <button onclick="editarRepartidor(${repartidor.id})">Editar</button>
+                            </td>
+                        `;
+
+                        tbody.appendChild(row);
+                    });
+                })
+                .catch(error => console.error('Error al obtener los datos:', error));
+        });
+
+        // Filtrar la tabla según el texto ingresado
+        document.getElementById('searchInput').addEventListener('input', function() {
+            const filter = this.value.toLowerCase();
+            const rows = document.querySelectorAll("#providerTable tbody tr");
+
+            rows.forEach(row => {
+                const nombre = row.cells[1].textContent.toLowerCase();
+                if (nombre.includes(filter)) {
+                    row.style.display = "";
+                } else {
+                    row.style.display = "none";
+                }
+            });
+        });
+
+        function agregarRepartidor() {
+            const nombre = document.getElementById('nombre').value;
+            const patente = document.getElementById('patente').value;
+            const telefono = document.getElementById('telefono').value;
+            const correo = document.getElementById('correo').value;
+
+            if (!nombre || !patente || !telefono || !correo) {
+                document.getElementById('validationMessage').style.display = 'block';
+                return;
+            }
+
+            document.getElementById('validationMessage').style.display = 'none';
+
+            fetch('agregar_repartidor.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    nombre: nombre,
+                    patente: patente,
+                    telefono: telefono,
+                    correo: correo
+                }),
+            })
+            .then(response => {
+                if (response.ok) {
+                    location.reload();
+                } else {
+                    console.error('Error al agregar el repartidor');
+                }
+            })
+            .catch(error => console.error('Error al agregar el repartidor:', error));
+        }
+
+        function eliminarRepartidor(id) {
+            fetch('eliminar_repartidor.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ id: id }),
+            })
+            .then(response => {
+                if (response.ok) {
+                    document.querySelector(`#providerTable tbody tr[data-id="${id}"]`).remove();
+                } else {
+                    console.error('Error al eliminar el repartidor');
+                }
+            })
+            .catch(error => console.error('Error al eliminar el repartidor:', error));
+        }
+
+        function editarRepartidor(id) {
+            const row = document.querySelector(`#providerTable tbody tr[data-id="${id}"]`);
+
+            const nombre = row.cells[1].textContent;
+            const patente = row.cells[2].textContent;
+            const telefono = row.cells[3].textContent;
+            const correo = row.cells[4].textContent;
+
+            row.innerHTML = `
+                <td>${id}</td>
+                <td><input type="text" id="editNombre${id}" value="${nombre}"></td>
+                <td><input type="text" id="editPatente${id}" value="${patente}"></td>
+                <td><input type="text" id="editTelefono${id}" value="${telefono}"></td>
+                <td><input type="email" id="editCorreo${id}" value="${correo}"></td>
+                <td>
+                    <button onclick="guardarEdicion(${id})">Guardar</button>
+                    <button onclick="cancelarEdicion(${id})">Cancelar</button>
+                </td>
+            </tr>
+        `;
+    }
+
+    function guardarEdicion(id) {
+        const nombre = document.getElementById(`editNombre${id}`).value;
+        const patente = document.getElementById(`editPatente${id}`).value;
+        const telefono = document.getElementById(`editTelefono${id}`).value;
+        const correo = document.getElementById(`editCorreo${id}`).value;
+
+        if (!nombre || !patente || !telefono || !correo) {
+            alert('Por favor, complete todos los campos.');
+            return;
+        }
+
+        fetch('actualizar_repartidor.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                id: id,
+                nombre: nombre,
+                patente: patente,
+                telefono: telefono,
+                correo: correo
+            }),
+        })
+        .then(response => {
+            if (response.ok) {
+                const row = document.querySelector(`#providerTable tbody tr[data-id="${id}"]`);
+                row.innerHTML = `
+                    <td>${id}</td>
+                    <td>${nombre}</td>
+                    <td>${patente}</td>
+                    <td>${telefono}</td>
+                    <td>${correo}</td>
+                    <td>
+                        <button onclick="eliminarRepartidor(${id})">Eliminar</button>
+                        <button onclick="editarRepartidor(${id})">Editar</button>
+                    </td>
+                `;
+            } else {
+                console.error('Error al guardar la edición del repartidor');
+            }
+        })
+        .catch(error => console.error('Error al guardar la edición del repartidor:', error));
+    }
+
+    function cancelarEdicion(id) {
+        const row = document.querySelector(`#providerTable tbody tr[data-id="${id}"]`);
+        fetch('get_repartidor.php')
+            .then(response => response.json())
+            .then(data => {
+                const repartidor = data.find(p => p.id === id);
+                if (repartidor) {
+                    row.innerHTML = `
+                        <td>${repartidor.id}</td>
+                        <td>${repartidor.nombre}</td>
+                        <td>${repartidor.patente}</td>
+                        <td>${repartidor.telefono}</td>Repartidor
+                        <td>${repartidor.correo}</td>
+                        <td>
+                            <button onclick="eliminarRepartidor(${repartidor.id})">Eliminar</button>
+                            <button onclick="editarRepartidor(${repartidor.id})">Editar</button>
+                        </td>
+                    `;
+                }
+            })
+            .catch(error => console.error('Error al cancelar la edición:', error));
+    }
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web App de Distribución de Alimentos - Clientes</title>
+    <link rel="stylesheet" href="../CSS/clientesadmin.css">
+</head>
+<body>
+    <div class="contenido">
+        <h1>Bienvenido a Distribución de Alimentos "Clientes"</h1>
+    </div>
+
+    <div class="menu">
+        <ul>
+            <li><a href="../index_admin.html">Inicio</a></li>
+            <li><a href="Inventario.html">Inventario</a></li>
+            <li><a href="Proveedores.html">Proveedores</a></li>
+            <li><a href="repartidor.html">repartidor</a></li>
+           <!--  <li><a href="Pedidos.html">Pedidos</a></li> -->
+        </ul>
+    </div>
+    
+    <p>Buscar Cliente</p>
+    <input type="text" id="searchInput" placeholder="Buscar por nombre...">
+    <br><br>
+
+    <!-- Formulario para agregar un nuevo cliente -->
+    <form id="addClientForm">
+        <input type="text" id="nombre" placeholder="Nombre" required>
+        <input type="text" id="direccion" placeholder="Dirección" required>
+        <input type="text" id="telefono" placeholder="Teléfono" required>
+        <input type="email" id="correo" placeholder="Correo" required>
+        <button type="button" onclick="agregarCliente()">Agregar Cliente</button>
+    </form>
+
+    <table id="clientTable">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Dirección</th>
+                <th>Teléfono</th>
+                <th>Correo</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Aquí se llenarán las filas de la tabla dinámicamente con datos del servidor -->
+        </tbody>
+    </table>
+
+    <div class="footer">
+        <p>Distribuidora de alimentos del Mañana S.A</p>
+        <p>Dirección: 123 Calle Principal, Ciudad de talca</p>
+        <p>Teléfono: +56995854231</p>
+        <p>Horario de Atención: Lunes a Viernes, 8:00 AM - 6:00 PM</p>
+        <p>Email: info@example.com</p>
+        <p>Todos los derechos reservados &copy; 2024</p>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // Hacer una solicitud AJAX para obtener los datos de los clientes
+            fetch('get_clientes.php')
+                .then(response => response.json())
+                .then(data => {
+                    const tbody = document.querySelector("#clientTable tbody");
+                    tbody.innerHTML = "";
+
+                    data.forEach(cliente => {
+                        const row = document.createElement("tr");
+                        row.setAttribute('data-id', cliente.id);
+                        
+                        row.innerHTML = `
+                            <td>${cliente.id}</td>
+                            <td>${cliente.nombre}</td>
+                            <td>${cliente.direccion}</td>
+                            <td>${cliente.telefono}</td>
+                            <td>${cliente.correo}</td>
+                            <td>
+                                <button onclick="eliminarCliente(${cliente.id})">Eliminar</button>
+                                <button onclick="editarCliente(${cliente.id})">Editar</button>
+                            </td>
+                        `;
+
+                        tbody.appendChild(row);
+                    });
+                })
+                .catch(error => console.error('Error al obtener los datos:', error));
+        });
+
+        // Filtrar la tabla según el texto ingresado
+        document.getElementById('searchInput').addEventListener('input', function() {
+            const filter = this.value.toLowerCase();
+            const rows = document.querySelectorAll("#clientTable tbody tr");
+
+            rows.forEach(row => {
+                const nombre = row.cells[1].textContent.toLowerCase();
+                if (nombre.includes(filter)) {
+                    row.style.display = "";
+                } else {
+                    row.style.display = "none";
+                }
+            });
+        });
+
+        function agregarCliente() {
+            const nombre = document.getElementById('nombre').value;
+            const direccion = document.getElementById('direccion').value;
+            const telefono = document.getElementById('telefono').value;
+            const correo = document.getElementById('correo').value;
+
+            if (!nombre || !direccion || !telefono || !correo) {
+                alert('Por favor, complete todos los campos.');
+                return;
+            }
+
+            fetch('agregar_cliente.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    nombre: nombre,
+                    direccion: direccion,
+                    telefono: telefono,
+                    correo: correo
+                }),
+            })
+            .then(response => {
+                if (response.ok) {
+                    location.reload();
+                } else {
+                    console.error('Error al agregar el cliente');
+                }
+            })
+            .catch(error => console.error('Error al agregar el cliente:', error));
+        }
+
+        function eliminarCliente(id) {
+            fetch('eliminar_cliente.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ id: id }),
+            })
+            .then(response => {
+                if (response.ok) {
+                    document.querySelector(`#clientTable tbody tr[data-id="${id}"]`).remove();
+                } else {
+                    console.error('Error al eliminar el cliente');
+                }
+            })
+            .catch(error => console.error('Error al eliminar el cliente:', error));
+        }
+
+        function editarCliente(id) {
+            const row = document.querySelector(`#clientTable tbody tr[data-id="${id}"]`);
+
+            const nombre = row.cells[1].textContent;
+            const direccion = row.cells[2].textContent;
+            const telefono = row.cells[3].textContent;
+            const correo = row.cells[4].textContent;
+
+            row.innerHTML = `
+                <td>${id}</td>
+                <td><input type="text" id="editNombre${id}" value="${nombre}"></td>
+                <td><input type="text" id="editDireccion${id}" value="${direccion}"></td>
+                <td><input type="text" id="editTelefono${id}" value="${telefono}"></td>
+                <td><input type="email" id="editCorreo${id}" value="${correo}"></td>
+                <td>
+                    <button onclick="guardarEdicion(${id})">Guardar</button>
+                    <button onclick="cancelarEdicion(${id})">Cancelar</button>
+                </td>
+            `;
+        }
+
+        function guardarEdicion(id) {
+            const nombre = document.getElementById(`editNombre${id}`).value;
+            const direccion = document.getElementById(`editDireccion${id}`).value;
+            const telefono = document.getElementById(`editTelefono${id}`).value;
+            const correo = document.getElementById(`editCorreo${id}`).value;
+
+            if (!nombre || !direccion || !telefono || !correo) {
+                alert('Por favor, complete todos los campos.');
+                return;
+            }
+
+            fetch('actualizar_cliente.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    id: id,
+                    nombre: nombre,
+                    direccion: direccion,
+                    telefono: telefono,
+                    correo: correo
+                }),
+            })
+            .then(response => {
+                if (response.ok) {
+                    const row = document.querySelector(`#clientTable tbody tr[data-id="${id}"]`);
+                    row.innerHTML = `
+                        <td>${id}</td>
+                        <td>${nombre}</td>
+                        <td>${direccion}</td>
+                        <td>${telefono}</td>
+                        <td>${correo}</td>
+                        <td>
+                            <button onclick="eliminarCliente(${id})">Eliminar</button>
+                            <button onclick="editarCliente(${id})">Editar</button>
+                        </td>
+                    `;
+                } else {
+                    console.error('Error al guardar la edición del cliente');
+                }
+            })
+            .catch(error => console.error('Error al guardar la edición del cliente:', error));
+        }
+
+        function cancelarEdicion(id) {
+            const row = document.querySelector(`#clientTable tbody tr[data-id="${id}"]`);
+            fetch('get_clientes.php')
+                .then(response => response.json())
+                .then(data => {
+                    const cliente = data.find(c => c.id === id);
+                    if (cliente) {
+                        row.innerHTML = `
+                            <td>${cliente.id}</td>
+                            <td>${cliente.nombre}</td>
+                            <td>${cliente.direccion}</td>
+                            <td>${cliente.telefono}</td>
+                            <td>${cliente.correo}</td>
+                            <td>
+                                <button onclick="eliminarCliente(${cliente.id})">Eliminar</button>
+                                <button onclick="editarCliente(${cliente.id})">Editar</button>
+                            </td>
+                        `;
+                    }
+                })
+                .catch(error => console.error('Error al cancelar la edición:', error));
+        }
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web App de Distribución de Alimentos - Productos</title>
+    <link rel="stylesheet" href="CSS/productos_clientes.css">
+</head>
+<body>
+    <div class="contenido">
+        <h1>Bienvenido a la Web App de Distribución de Alimentos</h1>
+    </div>
+
+    <div class="menu">
+        <ul>
+            <li><a href="Productos_clientes.html">Productos</a></li>
+           <!-- <li><a href="detallePedidos.html">Detalle de Pedidos</a></li> -->
+            <li><a href="contacto.html">Contacto</a></li>
+            <li><a href="register.html">Registrate Aquí</a></li>
+            <li><a href="Login_admin.html">Administrador</a></li> <!-- Nuevo enlace para el inicio de sesión del administrador -->
+        </ul>
+    </div>
+    
+    <div class="carrito-container">
+        <h2>Carrito de Compras</h2>
+        <table id="carritoTable">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nombre</th>
+                    <th>Precio</th>
+                    <th>Quitar</th>
+                </tr>
+            </thead>
+            <tbody id="carritoBody">
+                <!-- Aquí se llenarán las filas del carrito de compras -->
+            </tbody>
+        </table>
+        <div class="carrito-footer">
+            <p id="total">Total: $0.00</p>
+            <button onclick="vaciarCarrito()">Vaciar Carrito</button>
+        </div>
+    </div>
+
+    <div class="productos-container">
+        <h2>Productos</h2>
+        <p>Buscar Producto</p>
+        <input type="text" id="searchInput" placeholder="Buscar por nombre...">
+        <br><br>
+        <table id="productTable">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nombre</th>
+                    <th>Descripción</th>
+                    <th>Precio</th>
+                    <th>Stock</th>
+                    <th>Agregar al Carrito</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Aquí se llenarán las filas de la tabla dinámicamente con datos del servidor -->
+                <?php foreach ($productos as $producto): ?>
+                    <tr>
+                        <td><?php echo $producto['id']; ?></td>
+                        <td><?php echo $producto['nombre']; ?></td>
+                        <td><?php echo $producto['descripcion']; ?></td>
+                        <td><?php echo $producto['precio']; ?></td>
+                        <td><?php echo $producto['stock']; ?></td>
+                        <td class="agregar-carrito-container">
+                            <button onclick="agregarAlCarrito(<?php echo $producto['id']; ?>, <?php echo $producto['precio']; ?>)">Agregar</button>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="footer">
+        <p>Distribuidora de alimentos del Mañana S.A</p>
+        <p>Dirección: 123 Calle Principal, Ciudad de talca</p>
+        <p>Teléfono: +56995854231</p>
+        <p>Horario de Atención: Lunes a Viernes, 8:00 AM - 6:00 PM</p>
+        <p>Email: info@example.com</p>
+        <p>Todos los derechos reservados &copy; 2024</p>
+    </div>
+
+  <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // Hacer una solicitud AJAX para obtener los datos de los productos
+            fetch('productos_clientes.php')
+                .then(response => response.json())
+                .then(data => {
+                    const tbody = document.querySelector("#productTable tbody");
+                    tbody.innerHTML = "";
+
+                    data.forEach(producto => {
+                        const row = document.createElement("tr");
+                        
+                        row.innerHTML = `
+                            <td>${producto.id}</td>
+                            <td>${producto.nombre}</td>
+                            <td>${producto.descripcion}</td>
+                            <td>${producto.precio}</td>
+                            <td>${producto.stock}</td>
+                            <td class="agregar-carrito-container">
+                                <button onclick="agregarAlCarrito(${producto.id}, ${producto.precio})">Agregar</button>
+                                <button onclick="quitarDelCarrito(${producto.id}, ${producto.precio})">Quitar</button>
+                            </td>
+                        `;
+
+                        tbody.appendChild(row);
+                    });
+                })
+                .catch(error => console.error('Error al obtener los datos:', error));
+        });
+
+        // Función para agregar productos al carrito
+        function agregarAlCarrito(id, precio) {
+            const carritoBody = document.getElementById('carritoBody');
+            const totalElement = document.getElementById('total');
+
+            // Agregar el producto al carrito
+            const producto = `Producto ID: ${id}, Precio: $${precio}`;
+            carritoBody.innerHTML += `
+                <tr>
+                    <td>${id}</td>
+                    <td>Nombre Producto</td> <!-- Aquí va el nombre real del producto -->
+                    <td>${precio}</td>
+                    <td><button onclick="quitarDelCarrito(${id}, ${precio})">Quitar</button></td>
+                </tr>
+            `;
+
+            // Actualizar el total
+            const total = parseFloat(totalElement.textContent.split('$')[1]) + precio;
+            totalElement.textContent = `Total: $${total.toFixed(2)}`;
+        }
+
+        // Función para quitar productos del carrito
+        function quitarDelCarrito(id, precio) {
+            const carritoBody = document.getElementById('carritoBody');
+            const totalElement = document.getElementById('total');
+
+            // Eliminar el producto del carrito
+            const producto = document.querySelector(`#carritoBody tr td:first-child`);
+            carritoBody.removeChild(producto.parentNode);
+
+            // Actualizar el total
+            const total = parseFloat(totalElement.textContent.split('$')[1]) - precio;
+            totalElement.textContent = `Total: $${total.toFixed(2)}`;
+        }
+
+        // Función para vaciar el carrito
+        function vaciarCarrito() {
+            const carritoBody = document.getElementById('carritoBody');
+            const totalElement = document.getElementById('total');
+
+            // Limpiar el contenido del carrito
+            carritoBody.innerHTML = "";
+
+            // Restablecer el total a
+            const total = 0;
+            totalElement.textContent = `Total: $${total.toFixed(2)}`;
+        }
+
+        // Función para filtrar la tabla de productos por nombre
+        document.getElementById('searchInput').addEventListener('input', function() {
+            const filter = this.value.toLowerCase();
+            const rows = document.querySelectorAll("#productTable tbody tr");
+
+            rows.forEach(row => {
+                const nombre = row.cells[1].textContent.toLowerCase();
+                if (nombre.includes(filter)) {
+                    row.style.display = "";
+                } else {
+                    row.style.display = "none";
+                }
+            });
+        });
+    </script>
+</body>
+</html>

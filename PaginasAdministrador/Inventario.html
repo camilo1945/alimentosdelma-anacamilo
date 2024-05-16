@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web App de Distribución de Alimentos - Inventario</title>
+    <link rel="stylesheet" href="../CSS/inventario.css">
+</head>
+<body>
+    <div class="contenido">
+        <h1>Bienvenido a Distribución de Alimentos "Inventario"</h1>
+    </div>
+
+    <div class="menu">
+        <ul>
+            <li><a href="../index_admin.html">Inicio</a></li>
+            <li><a href="Clientes.html">Clientes</a></li>
+            <li><a href="Proveedores.html">Proveedores</a></li>
+            <li><a href="repartidor.html">repartidor</a></li>
+           <!-- <li><a href="detallePedidos.html">Detalle de Pedidos</a></li> -->
+        </ul>
+    </div>
+    
+    <p>Buscar Producto del Inventario</p>
+    <input type="text" id="searchInput" placeholder="Buscar por nombre...">
+    <br><br>
+
+    <!-- Selector de cantidad de productos por página -->
+    <label for="productosPorPagina">Mostrar:</label>
+    <select id="productosPorPagina">
+        <option value="10">10</option>
+        <option value="20">20</option>
+        <option value="30">30</option>
+    </select>
+
+    <!-- Formulario para agregar un nuevo producto -->
+    <form id="addProductForm">
+        <input type="text" id="nombre" placeholder="Nombre" required>
+        <input type="text" id="descripcion" placeholder="Descripción" required>
+        <input type="number" id="precio" placeholder="Precio" required>
+        <input type="number" id="stock" placeholder="Stock" required>
+        <button type="button" onclick="agregarProducto()">Agregar Producto</button>
+    </form>
+    <!-- Mensaje de validación -->
+    <div id="validationMessage" style="color: red; display: none;">Por favor, complete todos los campos.</div>
+
+
+    <table id="productTable">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Descripción</th>
+                <th>Precio</th>
+                <th>Stock</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Aquí se llenarán las filas de la tabla dinámicamente con datos del servidor -->
+        </tbody>
+    </table>
+
+    <div class="footer">
+        <p>Distribuidora de alimentos del Mañana S.A</p>
+        <p>Dirección: 123 Calle Principal, Ciudad de Talca</p>
+        <p>Teléfono: +56995854231</p>
+        <p>Horario de Atención: Lunes a Viernes, 8:00 AM - 6:00 PM</p>
+        <p>Email: info@example.com</p>
+        <p>Todos los derechos reservados &copy; 2024</p>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const selectProductosPorPagina = document.getElementById('productosPorPagina');
+            const productTable = document.getElementById('productTable');
+
+            selectProductosPorPagina.addEventListener('change', function() {
+                const cantidad = parseInt(this.value);
+                mostrarProductosPorPagina(productTable, cantidad);
+            });
+
+            function mostrarProductosPorPagina(table, cantidad) {
+                const rows = table.querySelectorAll('tbody tr');
+                rows.forEach((row, index) => {
+                    if (index < cantidad) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+            }
+
+            fetch('get_inventario.php')
+                .then(response => response.json())
+                .then(data => {
+                    const tbody = document.querySelector("#productTable tbody");
+                    tbody.innerHTML = "";
+
+                    data.forEach(producto => {
+                        const row = document.createElement("tr");
+                        row.setAttribute('data-id', producto.id);
+
+                        row.innerHTML = `
+                            <td>${producto.id}</td>
+                            <td>${producto.nombre}</td>
+                            <td>${producto.descripcion}</td>
+                            <td>${producto.precio}</td>
+                            <td>${producto.stock}</td>
+                            <td>
+                                <button onclick="eliminarProducto(${producto.id})">Eliminar</button>
+                                <button onclick="editarProducto(${producto.id})">Editar</button>
+                            </td>
+                        `;
+
+                        tbody.appendChild(row);
+                    });
+
+                    const cantidadInicial = parseInt(selectProductosPorPagina.value);
+                    mostrarProductosPorPagina(productTable, cantidadInicial);
+                })
+                .catch(error => console.error('Error al obtener los datos:', error));
+        });
+
+        document.getElementById('searchInput').addEventListener('input', function() {
+            const filter = this.value.toLowerCase();
+            const rows = document.querySelectorAll("#productTable tbody tr");
+
+            rows.forEach(row => {
+                const nombre = row.cells[1].textContent.toLowerCase();
+                if (nombre.includes(filter)) {
+                    row.style.display = "";
+                } else {
+                    row.style.display = "none";
+                }
+            });
+        });
+
+        function agregarProducto() {
+            const nombre = document.getElementById('nombre').value;
+            const descripcion = document.getElementById('descripcion').value;
+            const precio = document.getElementById('precio').value;
+            const stock = document.getElementById('stock').value;
+
+        if (!nombre || !direccion || !telefono || !correo) {
+                document.getElementById('validationMessage').style.display = 'block';
+                return;
+            }
+
+            document.getElementById('validationMessage').style.display = 'none';
+
+            fetch('agregar_producto.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    nombre: nombre,
+                    descripcion: descripcion,
+                    precio: precio,
+                    stock: stock
+                }),
+            })
+            .then(response => {
+                if (response.ok) {
+                    location.reload();
+                } else {
+                    console.error('Error al agregar el producto');
+                }
+            })
+            .catch(error => console.error('Error al agregar el producto:', error));
+        }
+
+        function eliminarProducto(id) {
+            fetch('eliminar_producto.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ id: id }),
+            })
+            .then(response => {
+                if (response.ok) {
+                    document.querySelector(`#productTable tbody tr[data-id="${id}"]`).remove();
+                } else {
+                    console.error('Error al eliminar el producto');
+                }
+            })
+            .catch(error => console.error('Error al eliminar el producto:', error));
+        }
+
+        function editarProducto(id) {
+            const row = document.querySelector(`#productTable tbody tr[data-id="${id}"]`);
+
+            const nombre = row.cells[1].textContent;
+            const descripcion = row.cells[2].textContent;
+            const precio = row.cells[3].textContent;
+            const stock = row.cells[4].textContent;
+
+            row.innerHTML = `
+                <td>${id}</td>
+                <td><input type="text" id="editNombre${id}" value="${nombre}"></td>
+                <td><input type="text" id="editDescripcion${id}" value="${descripcion}"></td>
+                <td><input type="number" id="editPrecio${id}" value="${precio}"></td>
+                <td><input type="number" id="editStock${id}" value="${stock}"></td>
+                <td>
+                    <button onclick="guardarEdicion(${id})">Guardar</button>
+                    <button onclick="cancelarEdicion(${id})">Cancelar</button>
+                </td>
+            `;
+        }
+
+        function guardarEdicion(id) {
+            const nombre = document.getElementById(`editNombre${id}`).value;
+            const descripcion = document.getElementById(`editDescripcion${id}`).value;
+            const precio = document.getElementById(`editPrecio${id}`).value;
+            const stock = document.getElementById(`editStock${id}`).value;
+
+            fetch('actualizar_producto.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    id: id,
+                    nombre: nombre,
+                    descripcion: descripcion,
+                    precio: precio,
+                    stock: stock
+                }),
+            })
+            .then(response => {
+                if (response.ok) {
+                    const row = document.querySelector(`#productTable tbody tr[data-id="${id}"]`);
+                    row.innerHTML = `
+                        <td>${id}</td>
+                        <td>${nombre}</td>
+                        <td>${descripcion}</td>
+                        <td>${precio}</td>
+                        <td>${stock}</td>
+                        <td>
+                            <button onclick="eliminarProducto(${id})">Eliminar</button>
+                            <button onclick="editarProducto(${id})">Editar</button>
+                        </td>
+                    `;
+                } else {
+                    console.error('Error al guardar la edición del producto');
+                }
+            })
+            .catch(error => console.error('Error al guardar la edición del producto:', error));
+        }
+
+        function cancelarEdicion(id) {
+            const row = document.querySelector(`#productTable tbody tr[data-id="${id}"]`);
+            fetch('get_inventario.php')
+                .then(response => response.json())
+                .then(data => {
+                    const producto = data.find(p => p.id === id);
+                    if (producto) {
+                        row.innerHTML = `
+                            <td>${producto.id}</td>
+                            <td>${producto.nombre}</td>
+                            <td>${producto.descripcion}</td>
+                            <td>${producto.precio}</td>
+                            <td>${producto.stock}</td>
+                            <td>
+                                <button onclick="eliminarProducto(${producto.id})">Eliminar</button>
+                                <button onclick="editarProducto(${producto.id})">Editar</button>
+                            </td>
+                        `;
+                    }
+                })
+                .catch(error => console.error('Error al cancelar la edición:', error));
+        }
+    </script>
+</body>
+</html>

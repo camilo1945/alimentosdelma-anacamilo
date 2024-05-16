@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web App de Distribución de Alimentos - Productos</title>
+    <link rel="stylesheet" href="../CSS/productos.css">
+</head>
+<body>
+    <div class="contenido">
+        <h1>Bienvenido a la Web App de Distribución de Alimentos</h1>
+    </div>
+
+    <div class="menu">
+        <ul>
+            <li><a href="../index_admin.html">Inicio</a></li>
+            <li><a href="Inventario.html">Inventario</a></li>
+            <li><a href="Clientes.html">Clientes</a></li>
+            <li><a href="Proveedores.html">Proveedores</a></li>
+           <!-- <li><a href="detallePedidos.html">Detalle de Pedidos</a></li> -->
+        </ul>
+    </div>
+    
+    <p>Buscar Producto</p>
+    <input type="text" id="searchInput" placeholder="Buscar por nombre...">
+    <br><br>
+
+    <table id="productTable">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Descripción</th>
+                <th>Precio</th>
+                <th>Stock</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Aquí se llenarán las filas de la tabla dinámicamente con datos del servidor -->
+        </tbody>
+    </table>
+
+    <div class="footer">
+        <p>Distribuidora de alimentos del Mañana S.A</p>
+        <p>Dirección: 123 Calle Principal, Ciudad de talca</p>
+        <p>Teléfono: +56995854231</p>
+        <p>Horario de Atención: Lunes a Viernes, 8:00 AM - 6:00 PM</p>
+        <p>Email: info@example.com</p>
+        <p>Todos los derechos reservados &copy; 2024</p>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // Hacer una solicitud AJAX para obtener los datos de los productos
+            fetch('get_productos.php')
+                .then(response => response.json())
+                .then(data => {
+                    const tbody = document.querySelector("#productTable tbody");
+                    tbody.innerHTML = "";
+
+                    data.forEach(producto => {
+                        const row = document.createElement("tr");
+                        
+                        row.innerHTML = `
+                            <td>${producto.id}</td>
+                            <td>${producto.nombre}</td>
+                            <td>${producto.descripcion}</td>
+                            <td>${producto.precio}</td>
+                            <td>${producto.stock}</td>
+                        `;
+
+                        tbody.appendChild(row);
+                    });
+                })
+                .catch(error => console.error('Error al obtener los datos:', error));
+        });
+
+        // Filtrar la tabla según el texto ingresado
+        document.getElementById('searchInput').addEventListener('input', function() {
+            const filter = this.value.toLowerCase();
+            const rows = document.querySelectorAll("#productTable tbody tr");
+
+            rows.forEach(row => {
+                const nombre = row.cells[1].textContent.toLowerCase();
+                if (nombre.includes(filter)) {
+                    row.style.display = "";
+                } else {
+                    row.style.display = "none";
+                }
+            });
+        });
+    </script>
+</body>
+</html>
